@@ -1,0 +1,151 @@
+== Gravatars ==
+Tags: gravatar
+copyright (c) 2004 Scott Merrill
+skippy@skippy.net | http://skippy.net/
+
+This plugin is distributed with no warranty.  Use it at your own risk.
+
+Please read this whole document, as new versions of the plugin will introduce new documentation.
+
+This plugin allows for the display of gravatars (Globally Recognized Avatars) throughout the blog. Each comment will display the comment owner's gravatar.  If the commenter does not have a gravatar, the default gravatar (as chosen by the blog owner) will be used. Additionally, registered users can define a local gravatar that will over-ride their gravatar.com default. The blog administrator(s) can manage default gravatar settings, as well as review all local and cached gravatars.
+
+== Installation ==
+
+===PART ZERO===
+If you are using WordPress 1.5.1.1 or above, skip this section.
+
+If you are using WordPress 1.5 and have not yet fixed bug #902, please visit
+     http://mosquito.wordpress.org/view.php?id=902
+and apply the patch.  If you don't know how to apply the patch, then do this:
+* edit wp-admin/menu-header.php
+* around line 40, you'll see the following:
+     $page_hook = get_plugin_page_hook($item[2], $parent_file);
+     if ( $page_hook )
+* change that to read:
+     $menu_hook = get_plugin_page_hook($item[2], $parent_file);
+     if ( $menu_hook )
+* save the file
+
+===PART ONE===
+1. Create the /gravatars/ directory inside your /wp-content/ directory.  For example:
+    cd wp-content
+    mkdir gravatars
+2. Make the /wp-content/gravatars/ directory writable for your webserver.  For example:
+    chgrp www-data gravatars
+    chmod g+w gravatars
+3. Extract the files into the root of your WordPress directory.
+4. Activate the plugin in your admin Plugins page.
+5. Click the "Options" admin menu link, and select "Gravatars".
+5. Set options to your taste -- especially the default gravatar image.
+7. Click the "Users" admin menu link, and select "Gravatars".
+8. Define a local gravatar for your user account, if you so desire.
+
+===PART TWO===
+Add styles for gravatars in your template's style.css.  You'll need a .gravatar class for use in comments, and a .postgrav for use in posts.  The following are EXAMPLE classes.  You will probably need to edit these to suit your layout.
+
+.gravatar {
+        float:left;
+        padding: 3px;
+        border: 1px solid #000;
+        background: #fff;
+}
+
+.postgrav {
+	float: left;
+	padding: 3px;
+	margin-right: 5px;
+	margin-left: 5px;
+	border: 1px solid #000;
+	background: #fff;
+}
+
+===PART THREE===
+Modify your template's comments.php file to call the gravatar() function:
+
+...
+<?php foreach ($comments as $comment) :
+   if (function_exists('gravatar')) {
+      if ('' != get_comment_author_url()) {
+         echo "<a href='$comment->comment_author_url' title='Visit $comment->comment_author'>";
+      } else {
+         echo "<a href='http://www.gravatar.com' title='Create your own gravatar at gravatar.com!'>";
+      }
+      echo "<img src='";
+      if ('' == $comment->comment_type) {
+         echo gravatar($comment->comment_author_email);
+      } elseif ( ('trackback' == $comment->comment_type) || ('pingback' == $comment->comment_type) ) {
+         echo gravatar($comment->comment_author_url);
+      }
+      echo "' alt='a gravatar' class='gravatar' /></a>";
+   }
+?>
+<div id="commentbox">
+ ...
+
+If, after modifying your template, your blog stops outputting unexpectedly or simply presents you with a totally blank page, please check your webserver's error log.  If you see the following:
+       Parse error: parse error, unexpected T_ELSE in ...
+then chances are that you missed a curly brace somewhere.  Double check your template.  If you still have trouble, try making one small change at a time.
+
+== Advanced ==
+===Gravatars in Posts===
+You can enable (or disable) gravatars in the body of your posts.  If activated, simply include in your post a line like the following:
+
+     <gravatar skippy@skippy.net />
+
+When the post is displayed to a reader, my gravatar will be included at that spot.  This is a great way to personalize your <blockquoute>s.
+
+You can specify who's gravatar to use with either an email address or a URI of the form "http://www.example.com/" (you _must_ include the http:// if you're using a URI!).  The gravatar() function will determine if you've supplied an email or an URI.  If you supply an URI, the function will determine whether any of your commenters have used that URI, and if so the associated email address will be used to display the gravatar image.
+
+===Random Gravatars===
+Version 2.3 introduces support for random default gravatars.  If a commenter does not have a gravatar defined, this plugin can randomly select a gravatar image from a directory you specify.
+
+In your Options -> Gravatars administration panel, simply enter for the default gravatar a path inside your WordPress installation somewhere.
+
+  ** IMPORTANT **
+  The path you enter _must_ begin and end with a slash (/).
+  ** IMPORTANT **
+
+  ** IMPORTANT **
+  No verification is performed on the contents of the specified directories.
+  It is your responsibility to make sure that only valid image files are
+  contained in this directory.
+  ** IMPORTANT **
+ 
+For example, you could create the directory /wp-content/gravatars/random/ and store your collection of random gravatars in there.  In the default gravatar option, you would enter
+   /wp-content/gravatars/random/
+
+Or you could create the directory /wp-content/random_gravatars/ and use the following value for default gravatar:
+   /wp-content/random_gravatars/
+
+=== Gravatar Functions ===
+In keeping with the WordPress template tag standard, this plugin provides several tags which you can use in your templates.
+
+* wp_gravatar($who, $default)
+This function returns a valid URI for the gravatar of the specified email address.  If local gravatar caching is disabled, this will return the default gravatar as defined in Options -> Gravatars.  If no local gravatar is cached, this will return the default gravatar.
+$who is the email address to use for the gravatar.
+$default is an optional parameter.  If not specified, the default gravatar image as defined in the administration settings will be used.  If $default is supplied and is not blank, it will be used the default gravatar image instead.  This should be a valid full URL (http://example.com/images/gravatar.png) or a valid relative path inside your webspace (/wp-content/gravatars/some_special_gravatar.png).  The primary purpose of the $default parameter is to allow a different gravatar to be displayed for comments, pingbacks and trackbacks.  If you find another novel use for this, please share!
+
+* gravatar($who, $default)
+This function merely calls wp_gravatar() and displays the results.  It is this tag that you will usually use in your template files.
+
+* wp_gravatar_info($md5 = '')
+Given an md5 sum of an email address, this function will query gravatars.com for some information about the gravatar assigned to that email address.  The information returned includes a status code, the rating of the gravatar, and a link to the gravatar.com record of the image.
+
+* random_gravatar()
+This function, which accepts no parameters, will return a randomly selected gravatar from the directory specified in 'default gravatar' in Options -> Gravatars.
+
+* gravatar_query($md5 = '', $default = '')
+This function returns the URL to gravatars.com for the specified md5 sum of an email address.  It accepts an optional $default parameter which can be used to return a different default gravatar than the one defined in Options -> Gravatars.
+
+* gravatar_cache($md5 = '')
+This function attempts to contact gravatars.com to retreive a copy of the gravatar associated with the md5 sum of an email address.  If an existing gravatar image exists, and the copy from gravatars.com is successful, the existing image will be replaced by the downloaded image.  If the download fails, nothing happens to the original (if any).  This function returns true or false depending on whether it was successful.
+
+===WP-Cron===
+The default caching mechanism is unchanged for this version of gravatars; but the plugin now evaluates whether or not you have activated an extension for my WP-Cron plugin.  If you have WP-Cron and my WP-Cron-Gravcache plugins installed and activated, no caching will occur during the normal operation of the gravatars plugin.  Instead, all cache evaluation and refresh will occur once per day through use of WP-Cron.  Note that individual cached gravatars still retain their own cache expiration times, which WP-Cron-Gravcache will honor.  So instead of gravatar cache expiration being evaluated for every gravatar with every page view, each gravatars cache expiration will be evaluated only once per day, and updated as needed.
+This should help ease the burden on servers, and hopefully speed things up a bit.
+
+
+== UPGRADING ==
+If you used a version of this plugin  prior to 1.5, please be advised that the way the options are stored in the database has changed.  Previous versions used a seperate database entry for each item on the gravatar option screen.  Version 1.5 (and greater) now stores all the gravatar options as a single database row.  You can safely leave the old options in the database.  You're also welcome to remove the old options, if you know how.  If you don't know how, you probably ought not fool around with them.
+
+Version 1.5 also introduces a new cache checking process.  Each cached gravatar has a timestamp stored in the database -- the theory is that checking a value in the database is a less "expensive" process than hitting the disk's filesystem for every page view.  This should drastically improve performance.  Over time you'll (potentially) have lots and lots of "gravatar_expire_<email>" rows in your database.  This ought not be a problem, as these options are _not_ loaded automatically -- they're only checked when the associated gravatar image is being requested.
